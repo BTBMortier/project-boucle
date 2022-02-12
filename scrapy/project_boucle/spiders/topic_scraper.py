@@ -29,7 +29,7 @@ def get_topic_info(topics_obj):
 def main():
     topics = get_topics()
     display = get_topic_info(topics)
-    print(display[0])
+    print(display)
 
 if __name__ == '__main__': 
     main()
