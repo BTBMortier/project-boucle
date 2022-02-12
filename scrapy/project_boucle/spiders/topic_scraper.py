@@ -20,9 +20,7 @@ def get_topic_info(topics_obj):
             topax   = topic.a['title']
             tlink   = topic.a['href']
             auteur  = topic.span.find_next("span",target="_blank").text.strip()
-            nposts  = topic.span.find_next("span",class_="topic-count").text.strip()
-            timest  = topic.span.find_next("span",class_="topic-date").text.strip()
-            tinfos  = [topax,tlink,auteur,nposts,timest]
+            tinfos  = [topax,tlink,auteur]
             display.append(tinfos)
     return display
         
