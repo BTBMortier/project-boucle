@@ -14,10 +14,16 @@ Vous trouverez le diagramme de la pipeline ci-dessous:
 ![boucled](https://user-images.githubusercontent.com/19901661/156818063-241ba9c3-ce63-4d53-af9c-0fa9673c1c0f.png)
 
 //TODO
+
 Mise en place PostgreSQL
+
 Scraping user info
+
 Nettoyage posts
+
 Nettoyage topics
+
 Nettoyage user
+
 Chargement données => PostgreSQL
 
