@@ -1,4 +1,5 @@
 import re
+import json
 import base64
 import scrapy
 import logging
@@ -32,6 +33,7 @@ class TopicsSpider(scrapy.Spider):
                     author   = t.xpath(".//span[@target='_blank']/text()").extract()[0].strip("\n").strip()
                     topic_id = t.xpath("./@data-id").extract()[0]
                     title = t.xpath(".//a[@class='lien-jv topic-title']/@title").extract()[0]
+                    n_posts = int(t.xpath(".//span[@class='topic-count']/text()").extract()[0])
                     topic_dict = {
                             "topic_id":topic_id,
                             "author":author,
@@ -49,7 +51,15 @@ class TopicsSpider(scrapy.Spider):
                 elif title_matches == 0 :
                     self.db.topics.update({"topic_id":topic_id},{"$set":{"new_title":title}})
                     self.db.topics.update({"topic_id":topic_id},{"$set":{"mod_title":"1"}})
-                yield {"topic":url}
+                
+                output = {"topic":url,"n_posts":n_posts}
+                f = open("long_topics.jl","w+")
+                if output["n_posts"] < 1000:
+                    yield output
+                else:
+                    f.write(json.dumps(output))
+                    
+
 
 
 
