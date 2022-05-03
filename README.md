@@ -15,11 +15,7 @@ Vous trouverez le diagramme de la pipeline ci-dessous:
 
 //TODO
 
-Mise en place PostgreSQL
-
 Scraping user info
-
-Nettoyage posts
 
 Nettoyage topics
 
@@ -27,5 +23,5 @@ Nettoyage user
 
 Chargement données => PostgreSQL
 
-Mise en place Docker
+Dockerizer l'application
 
