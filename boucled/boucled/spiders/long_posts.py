@@ -76,7 +76,7 @@ class PostsSpider(scrapy.Spider):
                         "topic_id":topic_id,
                         "timestamp":timestamp,
                         "post_id":post_id,
-                        "text_post":text_post,
+                        "post_text":text_post,
                         "text_hash":text_hash,
                         "page":curr_page}
                 post_list.append(post_dict)

@@ -27,7 +27,7 @@ class PostsSpider(scrapy.Spider):
         now = datetime.now()
         file_timestamp = now.strftime("%d-%m-%Y_%H%M%S")
         in_path = os.path.abspath("topics.jl")
-        out_path = os.path.abspath(f"out/topics/topics_{file_timestamp}.jl")
+        out_path = os.path.abspath(f"out/topics/topics_{file_timestamp}.json")
         shutil.copy(in_path, out_path)
         self.db = MongoClient('localhost', 27017)
         self.db = self.db["boucled"]
@@ -75,7 +75,7 @@ class PostsSpider(scrapy.Spider):
                         "topic_id":topic_id,
                         "timestamp":timestamp,
                         "post_id":post_id,
-                        "text_post":text_post,
+                        "post_text":text_post,
                         "text_hash":text_hash,
                         "page":curr_page}
                 post_list.append(post_dict)
@@ -98,8 +98,8 @@ class PostsSpider(scrapy.Spider):
         file_timestamp = now.strftime("%d-%m-%Y_%H%M%S")
         with open(f"out/posts/{topic_id}_page_{curr_page}-{file_timestamp}.json","a+") as outfile:
             for p in post_list:
-                out_data = json.dumps(str(p))
-                outfile.write(str(p)+"\n")
+                p = json.dumps(p,default=str)
+                outfile.write(p+"\n")
             outfile.close()
 
 
