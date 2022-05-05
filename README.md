@@ -6,7 +6,7 @@ Source : https://jvflux.fr/Boucle
 
 Le projet boucle a pour but de constituer une archive des posts(messages) et topics(sujets) du forum blabla 18-25 ans de jeuxvideo.com assez exhaustive pour pouvoir à terme alimenter un algorithme de Topic Analysis (classification de sujets) permettant de détecter les topics de la boucle.
 
-Sous sa forme actuelle c'est une suite de spiders scrapy et la pipeline d'ETL qui va avec pour appuyer mes candidatures d'alternance (Data Engineer)
+Sous sa forme actuelle c'est une suite de spiders scrapy et la pipeline d'ETL qui va avec pour appuyer mes candidatures d'alternance (Data Engineer ou Data Analyst Big Data/Spark)
 
 Vous trouverez le diagramme de la pipeline ci-dessous:
 
@@ -15,11 +15,7 @@ Vous trouverez le diagramme de la pipeline ci-dessous:
 
 //TODO
 
-Mise en place PostgreSQL
-
 Scraping user info
-
-Nettoyage posts
 
 Nettoyage topics
 
@@ -27,5 +23,5 @@ Nettoyage user
 
 Chargement données => PostgreSQL
 
-Mise en place Docker
+Dockerizer l'application
 
