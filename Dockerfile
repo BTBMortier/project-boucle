@@ -8,15 +8,15 @@ RUN apt-get update && apt-get install -y \
 	postgresql \
 	postgresql-contrib 
 
+RUN pg_ctlcluster 13 main start
+RUN ./change_psql_password.sh password
+
 RUN pip install apache-airflow
 RUN pip install pyspark 
 
 WORKDIR /usr/src/app
 COPY ./ /usr/src/app/
 
-RUN /etc/init.d/postgresql restart
-RUN service postgresql restart
-RUN ./change_psql_password.sh password
 WORKDIR ./project-boucle/boucled/boucled/spiders
 
 EXPOSE 5432 5442
