@@ -13,7 +13,7 @@ RUN pip install apache-airflow
 RUN pip install pyspark 
 
 WORKDIR /usr/src/app
-COPY ./project-boucle/ /usr/src/app
+COPY ./ /usr/src/app/
 
 WORKDIR ./project-boucle
 RUN ls -l
