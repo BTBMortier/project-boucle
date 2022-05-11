@@ -6,7 +6,7 @@ RUN useradd -m docker && echo "docker:docker" | chpasswd && adduser docker sudo
 USER docker
 CMD /bin/bash
 
-RUN apt-get install -y mongodb postgresql postgresql-contrib  --allow-releaseinfo-change 
+RUN apt-get install -y mongodb postgresql postgresql-contrib  
 
 RUN pip install apache-airflow
 RUN pip install pyspark 
