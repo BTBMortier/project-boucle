@@ -15,7 +15,7 @@ RUN pip install pyspark
 WORKDIR /usr/src/app
 COPY ./ /usr/src/app/
 
-RUN ls -l
+RUN /etc/init.d/postgresql restart
 RUN ./change_psql_password.sh password
 WORKDIR ./project-boucle/boucled/boucled/spiders
 
