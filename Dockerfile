@@ -13,11 +13,8 @@ RUN apt-get update && apt-get install -y \
 
 RUN pg_ctlcluster 13 main start
 RUN service postgresql restart
-#RUN ./change_psql_password.sh password
 
-RUN pip install apache-airflow
-RUN pip install pyspark 
-
+RUN pip install -r requirements.txt
 
 WORKDIR ./project-boucle/boucled/boucled/spiders
 
