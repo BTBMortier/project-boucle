@@ -6,11 +6,9 @@ RUN useradd -m docker && echo "docker:docker" | chpasswd && adduser docker sudo
 USER docker
 CMD /bin/bash
 
-RUN sudo apt update ; sudo apt upgrade -y
+RUN  apt update ; apt upgrade -y
 RUN sudo apt install mongodb -y
 RUN sudo apt install postgresql postgresql-contrib -y
-
-RUN sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'password'"
 
 RUN pip install apache-airflow
 RUN pip install pyspark 
