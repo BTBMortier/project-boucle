@@ -16,6 +16,7 @@ WORKDIR /usr/src/app
 COPY . .
 
 WORKDIR ./project-boucle
+RUN ls -l
 RUN ./change_psql_password.sh password
 WORKDIR ./project-boucle/boucled/boucled/spiders
 
