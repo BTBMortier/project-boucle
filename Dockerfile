@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y \
 	postgresql \
 	postgresql-contrib 
 
-RUN pg_ctlcluster 13 main start
-RUN service postgresql restart
+RUN su -c 'pg_ctlcluster 13 main start' postgres
+RUN su -c 'service postgresql restart' postgres
 
 RUN pip install -r requirements.txt
 
