@@ -1,27 +1,11 @@
 FROM python:3
 
-#https://hub.docker.com/r/tutum/mongodb/dockerfile/
-RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10 && \
-    echo "deb http://repo.mongodb.org/apt/ubuntu "$(lsb_release -sc)"/mongodb-org/3.2 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-3.2.list && \
-    apt-get update && \
-    apt-get install -y --force-yes pwgen mongodb-org mongodb-org-server mongodb-org-shell mongodb-org-mongos mongodb-org-tools && \
-    echo "mongodb-org hold" | dpkg --set-selections && echo "mongodb-org-server hold" | dpkg --set-selections && \
-    echo "mongodb-org-shell hold" | dpkg --set-selections && \
-    echo "mongodb-org-mongos hold" | dpkg --set-selections && \
-    echo "mongodb-org-tools hold" | dpkg --set-selections
-
-VOLUME /data/db
-
-ENV AUTH yes
-ENV STORAGE_ENGINE wiredTiger
-ENV JOURNALING yes
-
-ADD run.sh /run.sh
-ADD set_mongodb_password.sh /set_mongodb_password.sh
-
+RUN wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | apt-key add -
+RUN echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/5.0 main" | tee /etc/apt/sources.list.d/mongodb-org-5.0.list
 EXPOSE 27017 28017
 
 RUN apt-get update && apt-get install -y \
+	mongodb-org \
 	postgresql \
 	postgresql-contrib 
 
