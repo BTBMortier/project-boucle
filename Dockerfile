@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
 	postgresql-contrib 
 
 RUN pg_ctlcluster 13 main start
+RUN service postgresql restart
 RUN ./change_psql_password.sh password
 
 RUN pip install apache-airflow
