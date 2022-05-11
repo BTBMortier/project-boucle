@@ -1,6 +1,8 @@
+FROM python:3
 CMD /bin/bash
 
 RUN apt-get install -y mongodb postgresql postgresql-contrib  
+RUN psql -c "ALTER USER postgres WITH PASSWORD 'password'"
 
 RUN pip install apache-airflow
 RUN pip install pyspark 
