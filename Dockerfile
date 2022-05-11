@@ -5,14 +5,17 @@ RUN apt-get update && apt-get install -y \
 	mongodb \
 	postgresql \
 	postgresql-contrib \
-RUN psql -c "ALTER USER postgres WITH PASSWORD 'password'"
 
 RUN pip install apache-airflow
 RUN pip install pyspark 
 
 WORKDIR /usr/src/app
 COPY . .
+
+WORKDIR ./project-boucle
+RUN ./change_psql_password.sh password
 WORKDIR ./project-boucle/boucled/boucled/spiders
+
 #Ports to forward 
 #PSQL 5432
 #MongoDB 27017
