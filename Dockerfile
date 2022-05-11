@@ -1,5 +1,8 @@
 FROM python:3
 
+WORKDIR /usr/src/app
+COPY ./ /usr/src/app/
+
 RUN wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | apt-key add -
 RUN echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/5.0 main" | tee /etc/apt/sources.list.d/mongodb-org-5.0.list
 
@@ -14,8 +17,6 @@ RUN ./change_psql_password.sh password
 RUN pip install apache-airflow
 RUN pip install pyspark 
 
-WORKDIR /usr/src/app
-COPY ./ /usr/src/app/
 
 WORKDIR ./project-boucle/boucled/boucled/spiders
 
