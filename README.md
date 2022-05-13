@@ -25,3 +25,4 @@ Chargement données => PostgreSQL
 
 Dockerizer l'application
 
+Désimplémenter le hashage des posts
