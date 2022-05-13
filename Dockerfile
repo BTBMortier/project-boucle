@@ -13,10 +13,11 @@ RUN apt-get update && apt-get install -y \
 
 RUN su -c 'pg_ctlcluster 13 main start' postgres
 RUN su -c 'service postgresql restart' postgres
+RUN su -c './src/boucled_db/change_psql_password.sh' postgres
 
 RUN pip install -r requirements.txt
 
-WORKDIR ./project-boucle/boucled/boucled/spiders
+WORKDIR ./project-boucle/src/boucled_scrapers/spiders
 
 EXPOSE 5432 5442
 EXPOSE 8080 8090
