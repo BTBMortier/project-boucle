@@ -16,6 +16,8 @@ RUN su -c 'service postgresql restart' postgres
 RUN su -c './src/boucled_db/change_psql_password.sh' postgres
 
 RUN pip install -r requirements.txt
+RUN python3 ./src/boucled_db/mongodb.py
+RUN python3 ./src/boucled_db/postres.py
 
 WORKDIR ./project-boucle/src/boucled_scrapers/spiders
 
