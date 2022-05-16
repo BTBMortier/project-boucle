@@ -22,9 +22,7 @@ cur.execute("""CREATE TABLE IF NOT EXISTS posts(
     author VARCHAR(16) NOT NULL,
     page INT NOT NULL,
     post_id INT NOT NULL,
-    CONSTRAINT topic_id
-        FOREIGN KEY(pk_id)
-            REFERENCES topics(pk_id),
+    topic_id INT NOT NULL,
     post_text VARCHAR(20000),
     day INT NOT NULL,
     month INT NOT NULL,
