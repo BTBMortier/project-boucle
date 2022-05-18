@@ -7,12 +7,8 @@ from pymongo import MongoClient
 from urllib.parse import urljoin
 
 
-#//TODO Appels BDD posts                
-#//TODO update entree bdd topic avec timestamp op
-#//TODO update entree bdd topic avec lsp 
 #//TODO reprise scraping lsp
-#//TODO scraping multipage
-
+#//TODO gestion changements titres out/psql
 class TopicsSpider(scrapy.Spider):
     name = 'topics'
     allowed_domains = ['www.jeuxvideo.com']
@@ -34,15 +30,17 @@ class TopicsSpider(scrapy.Spider):
                     topic_id = t.xpath("./@data-id").extract()[0]
                     title = t.xpath(".//a[@class='lien-jv topic-title']/@title").extract()[0]
                     n_posts = int(t.xpath(".//span[@class='topic-count']/text()").extract()[0])
+                    url = t.xpath(".//a[@class='lien-jv topic-title']/@href").extract()[0]
+                    url = urljoin("https://www.jeuxvideo.com",url)
                     topic_dict = {
                             "topic_id":topic_id,
+                            "topic":url,
                             "author":author,
                             "title":title,
-                            "mod_title":"0"}
+                            "mod_title":"0",
+                            "n_posts":n_posts}
                 except:
                     continue
-                url = t.xpath(".//a[@class='lien-jv topic-title']/@href").extract()[0]
-                url = urljoin("https://www.jeuxvideo.com",url)
                 id_matches = int(self.db.topics.find({"topic_id":topic_id}).count())
                 title_matches = int(self.db.topics.find({"title":title}).count())
                 mod_title_matches = int(self.db.topics.find({"new_title": { "$in":[title]}}).count())
@@ -52,12 +50,11 @@ class TopicsSpider(scrapy.Spider):
                     self.db.topics.update({"topic_id":topic_id},{"$set":{"new_title":title}})
                     self.db.topics.update({"topic_id":topic_id},{"$set":{"mod_title":"1"}})
                 
-                output = {"topic":url,"n_posts":n_posts}
                 f = open("long_topics.jl","w+")
-                if output["n_posts"] < 1000:
-                    yield output
+                if topic_dict["n_posts"] < 1000:
+                    yield json.loads(json.dumps(topic_dict, default=str))
                 else:
-                    f.write(json.dumps(output))
+                    f.write(json.dumps(topic_dict, default=str))
                     
 
 

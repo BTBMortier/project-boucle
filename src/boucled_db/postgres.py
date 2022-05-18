@@ -7,13 +7,14 @@ cur = conn.cursor()
 
 cur.execute("""CREATE TABLE IF NOT EXISTS topics(
     pk_id serial PRIMARY KEY,
+    topic_id INT NOT NULL,
     author VARCHAR(16) NOT NULL,
     title  VARCHAR(256) NOT NULL,
-    mod_title VARCHAR(256),
-    day INT NOT NULL,
-    month INT NOT NULL,
-    year INT NOT NULL,
-    time VARCHAR(10) NOT NULL )
+    mod_title VARCHAR(1),
+    day INT,
+    month INT,
+    year INT,
+    time VARCHAR(10))
 
 """)
 

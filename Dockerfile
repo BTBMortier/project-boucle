@@ -20,7 +20,8 @@ RUN python3 ./src/boucled_db/mongodb.py
 RUN python3 ./src/boucled_db/postres.py
 
 WORKDIR ./project-boucle/src/boucled_scrapers/spiders
-RUN mkdir out
+RUN mkdir -p out/posts/processed
+RUN mkdir -p out/topics/processed
 
 EXPOSE 5432 5442
 EXPOSE 8080 8090
