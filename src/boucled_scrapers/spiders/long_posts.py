@@ -25,7 +25,8 @@ class PostsSpider(scrapy.Spider):
         if json.loads(l)["topic"] not in start_urls:
             start_urls.append(json.loads(l)["topic"])
     f.close()
-    custom_settings = {'CONCURRENT_REQUESTS' : 64}
+    custom_settings = {'CONCURRENT_REQUESTS' : 64,
+                        'CONCURRENT_REQUESTS_PER_DOMAIN': 64}
     
     def __init__(self):
         now = datetime.now()
