@@ -15,14 +15,4 @@ Vous trouverez le diagramme de la pipeline ci-dessous:
 
 //TODO
 
-Scraping user info
-
-Nettoyage topics
-
-Nettoyage user
-
-Chargement données => PostgreSQL
-
-Dockerizer l'application
-
 Désimplémenter le hashage des posts
