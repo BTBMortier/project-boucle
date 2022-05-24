@@ -20,11 +20,11 @@ RUN su -c './src/boucled_db/change_psql_password.sh password' postgres
 
 #Installation des dépendances python
 RUN pip install -r requirements.txt
-RUN python3 ./src/boucled_db/mongodb.py
-RUN python3 ./src/boucled_db/postres.py
+RUN python3 ./pipeline/boucled_db/mongodb.py
+RUN python3 ./pipeline/boucled_db/postres.py
 
 #Préparation des dossiers et création des fichiers temporaires des spiders
-WORKDIR ./project-boucle/src/boucled_scrapers/spiders
+WORKDIR ./project-boucle/pipeline/boucled_scrapers/spiders
 RUN touch topics.jl
 RUN touch long_topics.jl
 RUN mkdir -p out/posts/processed
