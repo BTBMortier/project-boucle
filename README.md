@@ -81,7 +81,7 @@ Puis pour le scraping des topics en lui-même, après avoir parsé les élément
         red_pin = "icon-topic-pin topic-pin-off topic-img"
 ```
  
- Puis je récupére et compile dans un dictionnaire ce j'ai extrait: 
+ Puis je récupére et compile dans un dictionnaire ce que j'ai extrait: 
  
  ```
          for t in topics:
@@ -106,8 +106,11 @@ Puis pour le scraping des topics en lui-même, après avoir parsé les élément
 ```
 
 Avant d'envoyer mes topics sur la MongoDB, je vérifie que je ne les ai déjà pas dans mes enregistrements pour:
+
 1)Éviter les doublons
+
 2)Détecter et enregistrer les changements de titre (pratique très courante parmis les plaisantins de jeuxvideo.com )
+
 
 ```
               id_matches = int(self.db.topics.find({"topic_id":topic_id}).count())
@@ -267,6 +270,313 @@ A titre indicatif: la fonction qui initie le scraping de la page n+1 :
                 return next_page
         return None
 ```
+
+# TRANSFORM (& LOAD ) 
+
+Note: Le timestamp(groupe date heure) des topics n'étant pas visible sur la page d'accueil du forum, les posts sont traités en premier, ainsi avant de les charger dans leur destination finale je peux dériver leurs timestamps de mes posts en les triant par topic et par ordre d'apparition (identifiant de post)
+
+# 1) Traitement des posts 
+
+En premier lieu les imports  et la déclaration de mon contexte spark:
+
+```
+import re
+import os
+import json
+import shutil
+import psycopg2
+from bs4 import BeautifulSoup
+
+from pyspark.sql import Row
+from pyspark import SparkConf
+from pyspark import SparkContext
+from pyspark.sql import SQLContext
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StringType,IntegerType
+from pyspark.sql.functions import udf,col,regexp_extract,regexp_replace
+
+conf = SparkConf()  # create the configuration
+conf.set("spark.jars", "postgresql-42.2.6.jar")
+
+sc = SparkSession \
+    .builder \
+    .config("spark.driver.extraClassPath", "./postgresql-42.2.6.jar") \
+    .appName("boucled") \
+    .getOrCreate()
+
+sqlsc = SQLContext(sc)
+
+```
+
+Puis je définis une fonction pour sortir de l'HTML brut enregistré le texte qui m'intéresse réellement:
+
+```
+def clean_post_text(post_text):
+    #Parsing html
+    clean_text = ""
+    soup = BeautifulSoup(post_text,"html.parser")
+    for tag in soup("blockquote.blockquote-jv"):
+        tag.clear()
+
+    #Boucler sur la liste d'\u00e9lements \u00e0 l'envers est le meilleur moment 
+    for elem in list(soup)[::-1]:
+        if elem.name == "p":
+            clean_text += elem.get_text()
+        else:
+            break
+
+    return clean_text
+```
+
+Je définis le dossier d'où seront chargés mes posts et leur destination finale avant de les charger en mémoire
+
+```
+in_path  = "/usr/src/app/project-boucle/src/boucled_scrapers/spiders/out/posts"
+out_path = "/usr/src/app/project-boucle/src/boucled_scrapers/spiders/out/posts/processed"
+posts_df = sqlsc.read.json(in_path)
+```
+
+Ici je définis un regex et un dictionnaire des mois en français pour extraire le timestamp qui est extrait du site sous cette forme:
+
+```
+25 mai 2022 à 04:25:30
+```
+
+```
+timestamp_regex = "(\d{2})\s(\D{3,9})\s(\d{4})\s[\u00e0]\s(\d{2}:\d{2}:\d{2})"
+#g1:day|g2:month|g3:year|g4:time
+months = {
+        "janvier":"01",
+        "février":"02",
+        "mars":"03",
+        "avril":"04",
+        "mai":"05",
+        "juin":"06",
+        "juillet":"07",
+        "ao\u00fbt":"08",
+        "septembre":"09",
+        "octobre":"10",
+        "novembre":"11",
+        "décembre":"12"}
+```
+
+Et je les extraits et les ajoutes à ma df avant de nettoyer le texte
+
+```
+months_udf = udf(lambda x : months[x],StringType())
+posts_df = posts_df.withColumn("day", regexp_extract(col("timestamp"),timestamp_regex,1))
+posts_df = posts_df.withColumn("month", regexp_extract(col("timestamp"),timestamp_regex,2))
+posts_df = posts_df.withColumn("month",months_udf(col("month")))
+posts_df = posts_df.withColumn("year", regexp_extract(col("timestamp"),timestamp_regex,3))
+posts_df = posts_df.withColumn("time", regexp_extract(col("timestamp"),timestamp_regex,4))
+
+udf_clean_text = udf(lambda x : clean_post_text(x),StringType())
+posts_df = posts_df.withColumn("post_text",udf_clean_text(col("post_text")))
+```
+
+Enfin avant de charger la df sur Postgres, je retires les colonnes superflues et caste ses types afin d'éviter des erreur
+
+```
+final_df = posts_df.select("author", "page", "post_id",
+                "post_text", "topic_id", "day",
+                "month", "year","time")
+final_df = final_df.withColumn("post_id",final_df["post_id"].cast(IntegerType()))
+final_df = final_df.withColumn("topic_id",final_df["topic_id"].cast(IntegerType()))
+final_df = final_df.withColumn("day",final_df["day"].cast(IntegerType()))
+final_df = final_df.withColumn("month",final_df["month"].cast(IntegerType()))
+final_df = final_df.withColumn("year",final_df["year"].cast(IntegerType()))
+```
+
+# 2)Chargement des posts dans PostgreSQL
+
+Puis je les charges et execute une requête SQL pour supprimer les doublons
+
+```
+final_df.write.format('jdbc').options(
+  url='jdbc:postgresql://localhost:5432/boucled',
+  driver='org.postgresql.Driver',
+  dbtable='posts',
+  user='postgres',
+  password='password').mode('append').save()
+
+conn = psycopg2.connect(dbname="boucled", user="postgres",
+                        password="password", host="localhost")
+conn.autocommit = True
+cur = conn.cursor()
+cur.execute("""
+DELETE FROM posts
+WHERE pk_id IN
+    (SELECT pk_id
+    FROM
+        (SELECT pk_id,
+        ROW_NUMBER() OVER(PARTITION BY post_text 
+        ORDER BY pk_id) AS row_num
+        FROM posts) temp_table
+        WHERE temp_table.row_num > 1);
+""")
+cur.close()
+conn.close()
+```
+
+Pour finir on déplace ce qui a déjà été traité pour ne pas gâcher de temps d'éxécution et d'espace de stockage à le retraiter
+
+```
+out_dir = os.listdir(in_path)
+for file_name in out_dir:
+    shutil.move(os.path.join(in_path, file_name), out_path)
+```
+
+# 3) Chargement des topics
+
+Ici, aucun nettoyage à faire, pour le reste c'est la même chose que ce qui a été effectué pour les posts...
+
+```
+
+import re
+import os
+import json
+import shutil
+import psycopg2
+from bs4 import BeautifulSoup
+
+from pyspark.sql import Row
+from pyspark import SparkConf
+from pyspark import SparkContext
+from pyspark.sql import SQLContext
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StringType,IntegerType
+from pyspark.sql.functions import udf,col,regexp_extract,regexp_replace
+
+conf = SparkConf()  # create the configuration
+conf.set("spark.jars", "postgresql-42.2.6.jar")
+
+sc = SparkSession \
+    .builder \
+    .config("spark.driver.extraClassPath", "./postgresql-42.2.6.jar") \
+    .appName("boucled") \
+    .getOrCreate()
+
+sqlsc = SQLContext(sc)
+
+in_path  = "/usr/src/app/project-boucle/pipeline/boucled_scrapers/spiders/out/topics"
+out_path = "/usr/src/app/project-boucle/pipeline/boucled_scrapers/spiders/out/topics/processed"
+topics_df = sqlsc.read.json(in_path)
+
+final_df = topics_df.select("author", "title", "mod_title", "topic_id")
+final_df = final_df.withColumn("topic_id",final_df["topic_id"].cast(IntegerType()))
+final_df.write.format('jdbc').options(
+  url='jdbc:postgresql://localhost:5432/boucled',
+  driver='org.postgresql.Driver',
+  dbtable='topics',
+  user='postgres',
+  password='password').mode('append').save()
+
+conn = psycopg2.connect(dbname="boucled", user="postgres",
+                        password="password", host="localhost")
+conn.autocommit = True
+cur = conn.cursor()
+cur.execute("""
+DELETE FROM topics
+WHERE pk_id IN
+    (SELECT pk_id
+    FROM
+        (SELECT pk_id,
+        ROW_NUMBER() OVER(PARTITION BY title 
+        ORDER BY pk_id) AS row_num
+        FROM topics) temp_table
+        WHERE temp_table.row_num > 1);
+""")
+```
+
+...À l'exception de cette requête qui relie chaque topic à son premier post pour récuperer son timestamp
+
+```
+cur.execute("""
+UPDATE topics AS t 
+
+SET 
+year = ts.year,
+month = ts.month,
+day = ts.day,
+time = ts.time
+
+FROM
+(SELECT * FROM 
+(SELECT 
+topic_id,
+day,
+month,
+year,
+time,
+ROW_NUMBER() OVER (PARTITION BY topic_id ORDER BY post_id) AS row
+FROM posts) AS temp_table 
+WHERE temp_table.row = 1 ) AS ts 
+WHERE t.topic_id = ts.topic_id 
+""")
+cur.close()
+conn.close()
+```
+
+Une fois de plus, on déplace ce qui a déjà été traité afin de ne pas inutilement retravailler dessus 
+
+```
+out_dir = os.listdir(in_path)
+for file_name in out_dir:
+    shutil.move(os.path.join(in_path, file_name), out_path)
+```
+
+Et pour finir, le DAG qui orchestre le tout avec Airflow
+
+```
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.providers.papermill.operators.papermill import PapermillOperator
+
+from datetime import datetime, timedelta
+
+
+with DAG("forum_etl",
+        start_date=datetime(2022,5,18),
+        schedule_interval=timedelta(minutes=1),
+        catchup=False
+        ) as dag:
+
+    scrape_topics = BashOperator(
+            task_id = "scrape_topics",
+            bash_command = """
+            cd /usr/src/app/project-boucle/src/boucled_scrapers/spiders;
+            scrapy crawl topics -O topics.jl;
+            """
+            )
+    scrape_posts = BashOperator(
+            task_id = "scrape_posts",
+            bash_command = """
+            cd /usr/src/app/project-boucle/src/boucled_scrapers/spiders;
+            scrapy crawl posts;
+            """
+            )
+    transform_load_posts = BashOperator(
+            task_id = "transload_posts",
+            bash_command = "python3 /usr/src/app/project-boucle/src/boucled_etl/tl_posts.py"
+            )
+    transform_load_topics = BashOperator(
+            task_id = "transload_topics",
+            bash_command = "python3 /usr/src/app/project-boucle/src/boucled_etl/tl_topics.py"
+            )
+
+scrape_topics >> scrape_posts 
+transform_load_posts >> transform_load_topics
+```
+
+
+
+
+
+
+
+
+
 
 
 
