@@ -428,7 +428,7 @@ for file_name in out_dir:
 
 # 3) Chargement des topics
 
-Ici, aucun nettoyage à faire, pour le reste c'est la même chose que ce qui a été effectué pour les posts...
+Ici, aucun nettoyage à faire, pour le reste c'est similaire à ce qui a été effectué pour les posts...
 
 ```
 
