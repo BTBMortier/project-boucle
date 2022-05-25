@@ -1,7 +1,8 @@
 FROM apache/airflow:latest
 
-WORKDIR /usr/src/app
 COPY ./. /usr/src/app/
+COPY ./pipeline/dags/. /opt/airflow/dags/
+
 
 #Ajout des clés et dépots du paquet MongoDB
 RUN wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | apt-key add -
@@ -24,7 +25,7 @@ RUN python3 ./pipeline/boucled_db/mongodb.py
 RUN python3 ./pipeline/boucled_db/postres.py
 
 #Préparation des dossiers et création des fichiers temporaires des spiders
-WORKDIR ./project-boucle/pipeline/boucled_scrapers/spiders
+WORKDIR /usr/src/app/project-boucle/pipeline/boucled_scrapers/spiders
 RUN touch topics.jl
 RUN touch long_topics.jl
 RUN mkdir -p out/posts/processed
