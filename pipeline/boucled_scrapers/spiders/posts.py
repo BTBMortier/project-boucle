@@ -23,7 +23,7 @@ class PostsSpider(scrapy.Spider):
     f.close()
     custom_settings = {
             'CONCURRENT_REQUESTS' : 30,
-            'CONCURRENT_REQUESTS_PER_DOMAIN': 64}
+            'CONCURRENT_REQUESTS_PER_DOMAIN': 30}
     
     def __init__(self):
         now = datetime.now()
