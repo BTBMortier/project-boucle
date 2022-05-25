@@ -21,7 +21,9 @@ class PostsSpider(scrapy.Spider):
     start_urls = [json.loads(url)["topic"] for url in f if json.loads(url)["n_posts"] < 1000 ]
     topic_list = f.readlines()
     f.close()
-    custom_settings = {'CONCURRENT_REQUESTS' : 30}
+    custom_settings = {
+            'CONCURRENT_REQUESTS' : 30,
+            'CONCURRENT_REQUESTS_PER_DOMAIN': 64}
     
     def __init__(self):
         now = datetime.now()
