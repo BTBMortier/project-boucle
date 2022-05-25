@@ -31,16 +31,11 @@ sc = SparkSession \
 sqlsc = SQLContext(sc)
 
 
-# In[9]:
-
-
-
-
 # In[15]:
 
 
-in_path  = "/usr/src/app/project-boucle/src/boucled_scrapers/spiders/out/topics"
-out_path = "/usr/src/app/project-boucle/src/boucled_scrapers/spiders/out/topics/processed" 
+in_path  = "/usr/src/app/project-boucle/pipeline/boucled_scrapers/spiders/out/topics"
+out_path = "/usr/src/app/project-boucle/pipeline/boucled_scrapers/spiders/out/topics/processed" 
 topics_df = sqlsc.read.json(in_path)
 #Relier date/heure du premier d'un id topic a l'entrée topic dans la postgres avec un 
 #rownum
@@ -67,6 +62,28 @@ WHERE pk_id IN
         ORDER BY pk_id) AS row_num
         FROM topics) temp_table
         WHERE temp_table.row_num > 1);
+""")
+cur.execute("""
+UPDATE topics AS t 
+
+SET 
+year = ts.year,
+month = ts.month,
+day = ts.day,
+time = ts.time
+
+FROM
+(SELECT * FROM 
+(SELECT 
+topic_id,
+day,
+month,
+year,
+time,
+ROW_NUMBER() OVER (PARTITION BY topic_id ORDER BY post_id) AS row
+FROM posts) AS temp_table 
+WHERE temp_table.row = 1 ) AS ts 
+WHERE t.topic_id = ts.topic_id 
 """)
 cur.close()
 conn.close()

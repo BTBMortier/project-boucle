@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[26]:
+# In[ ]:
 
 
 import re 
@@ -31,7 +31,7 @@ sc = SparkSession \
 sqlsc = SQLContext(sc)
 
 
-# In[27]:
+# In[ ]:
 
 
 def clean_timestamp(timestamp):
@@ -77,7 +77,7 @@ def clean_post_text(post_text):
     return clean_text
 
 
-# In[28]:
+# In[ ]:
 
 
 in_path  = "/usr/src/app/project-boucle/src/boucled_scrapers/spiders/out/posts"
@@ -109,7 +109,7 @@ udf_clean_text = udf(lambda x : clean_post_text(x),StringType())
 posts_df = posts_df.withColumn("post_text",udf_clean_text(col("post_text")))
 
 
-# In[29]:
+# In[ ]:
 
 
 final_df = posts_df.select("author", "page", "post_id", 
@@ -147,7 +147,7 @@ cur.close()
 conn.close()
 
 
-# In[30]:
+# In[ ]:
 
 
 out_dir = os.listdir(in_path)

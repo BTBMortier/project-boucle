@@ -35,4 +35,5 @@ with DAG("forum_etl",
             bash_command = "python3 /usr/src/app/project-boucle/src/boucled_etl/tl_topics.py"
             )
 
-scrape_topics >> scrape_posts >> transform_load_posts >> transform_load_topics
+scrape_topics >> scrape_posts 
+transform_load_posts >> transform_load_topics
