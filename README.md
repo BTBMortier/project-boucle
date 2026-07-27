@@ -38,3 +38,6 @@ flowchart TD
     subgraph Observability & Audit
         D -.->|Log Repair Event| J[SQLite / Structlog Audit Logs]
     end
+```
+
+Vibe coded with love by a slacker in his underwear
