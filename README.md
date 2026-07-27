@@ -2,10 +2,10 @@
 
 ![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)
 ![Architecture](https://img.shields.io/badge/Architecture-SLM%20%2B%20RAG-green)
-![Data Engine](https://img.shields.io/badge/Data%20Engine-Polars%20%7C%20DuckDB-orange)
+![Storage Engine](https://img.shields.io/badge/Storage-Parquet%20%2B%20DuckDB-orange)
 ![License](https://img.shields.io/badge/license-MIT-informational)
 
-An enterprise-grade, resilient web scraping and ETL pipeline designed to automatically detect DOM/schema drift and auto-heal selectors using a local Small Language Model (SLM) grounded in official Selenium documentation.
+An enterprise-grade, resilient web scraping and ETL pipeline designed to automatically detect DOM/schema drift and auto-heal selectors using a local Small Language Model (SLM) grounded in official Selenium documentation, with immutable Parquet cold storage and DuckDB OLAP analytics.
 
 ---
 
@@ -13,6 +13,7 @@ An enterprise-grade, resilient web scraping and ETL pipeline designed to automat
 
 - **The Problem:** Traditional Web Scrapers break whenever target websites update their DOM structure, class names, or layout—requiring manual maintenance and disrupting downstream data pipelines.
 - **The Solution:** *Project Boucle* introduces a **Self-Healing Loop**. When a selector fails (`NoSuchElementException`), the pipeline captures the HTML context, queries a local vector store containing Selenium documentation (RAG), and uses a lightweight SLM (Qwen2.5-Coder / Phi-3 via Ollama) to generate a valid, compliant selector on the fly.
+- **Storage Strategy:** Scraped data is saved as immutable **Parquet** files (Raw Cold Lake), while **DuckDB** queries these files directly to build aggregated trend reports without running heavy database infrastructure.
 
 ---
 
@@ -30,10 +31,10 @@ flowchart TD
         F -->|3. Propose Valid Selector| A
     end
 
-    C -->|Valid Data| G[Polars / DuckDB Transformation]
-    G --> H[Automated Trend Reports & Analytics]
+    C -->|Valid Raw Data| G[Raw Storage: Partitioned Parquet Lake]
+    G -->|Zero-Copy / OLAP Queries| H[DuckDB Analytical Engine]
+    H --> I[Automated Trend Reports & Metrics]
     
-    subgraph Quality & Observability
-        I[structlog - Audit Logs]
-        J[Data Drift Metrics]
+    subgraph Observability & Audit
+        D -.->|Log Repair Event| J[SQLite / Structlog Audit Logs]
     end
