@@ -1,50 +1,97 @@
 # Project Boucle
 
-## Overview
+## Présentation
 
-**Project Boucle** est un projet informatique dédié à l'exécution, l'automatisation et la gestion de traitements itératifs (boucles d'exécution, pipelines de données ou tâches récurrentes). Ce dépôt regroupe le code source principal, les configurations d'environnement, ainsi que les suites de tests automatisés.
+**Project Boucle** est un pipeline ETL (Extract, Transform, Load) automatisé conçu pour l'extraction de données issues de forums web, leur transformation et leur persistance dans des bases de données relationnelles et NoSQL.
 
----
-
-## Architecture et Fonctionnalités
-
-* **Moteur d'exécution itératif :** Orchestration et exécution séquentielle ou parallèle de traitements.
-* **Gestion des états et du contexte :** Suivi dynamique de l'avancement, persistance intermédiaire et réinitialisation de boucle.
-* **Journalisation et Robustesse :** Capture structurée des logs, gestion centralisée des erreurs et stratégies de réessai (retry policies).
-* **Modularité :** Structure en composants indépendants permettant l'ajout ou la modification de traitements sans altérer le cœur du système.
+Le projet est conteneurisé via Docker et orchestrait par Apache Airflow, tout en conservant la possibilité d'être exécuté de manière autonome.
 
 ---
 
-## Structure du Projet
+## Architecture et Stack Technique
+
+* **Extraction (Scraping) :** Scrapy (Spiders pour sujets `topics` et messages `posts`).
+* **Transformation & Chargement (ETL) :** Python / Spark (`tl_posts.py`, `tl_topics.py`).
+* **Stockage & Persistance :**
+* **PostgreSQL :** Connecteur et requêtes via `postgres.py`.
+* **MongoDB :** Connecteur et requêtes via `mongodb.py`.
+
+
+* **Orchestration :** Apache Airflow (`forum_etl.py`).
+* **Conteneurisation :** Docker (`Dockerfile`).
+
+---
+
+## Arborescence du Projet
 
 ```text
-project-boucle/
-├── config/             # Fichiers de configuration (environnement, constantes)
-├── src/                # Code source principal
-│   ├── core/           # Moteur d'exécution et logique de la boucle
-│   ├── modules/        # Traitements métiers et services tiers
-│   └── utils/          # Logger, helpers et utilitaires
-├── tests/              # Tests unitaires, d'intégration et de performance
-├── .env.example        # Modèle de variables d'environnement
-├── .gitignore          # Exclusions Git
-├── Dockerfile          # Configuration de conteneurisation
-└── README.md           # Documentation principale
+.
+├── Dockerfile
+├── requirements.txt
+├── README.md
+└── pipeline/
+    ├── scrapy.cfg
+    ├── boucled_scrapers/             # Projets et spiders Scrapy
+    │   ├── items.py
+    │   ├── middlewares.py
+    │   ├── pipelines.py
+    │   ├── settings.py
+    │   └── spiders/
+    │       ├── topics.py             # Spider d'extraction des sujets
+    │       ├── posts.py              # Spider d'extraction des posts
+    │       ├── long_posts.py
+    │       ├── long_topics.jl
+    │       └── launch_spiders.sh
+    ├── boucled_etl/                  # Scripts de transformation et chargement
+    │   ├── tl_topics.py              # Traitement des sujets
+    │   ├── tl_posts.py               # Traitement des messages
+    │   ├── tl_topics.ipynb
+    │   ├── tl_posts.ipynb
+    │   └── convert_nbs.sh            # Conversion des notebooks en scripts Python
+    ├── boucled_db/                   # Interactions avec les bases de données
+    │   ├── postgres.py               # Gestion du stockage PostgreSQL
+    │   ├── mongodb.py                # Gestion du stockage MongoDB
+    │   └── change_psql_password.sh
+    └── dags/                         # Orchestration Airflow
+        └── forum_etl.py              # DAG de planification du pipeline
 
 ```
 
 ---
 
-## Prérequis
+## Flux d'Exécution (DAG Airflow)
 
-* **Runtime :** Node.js (`>= 18.x`) ou Python (`>= 3.10`) selon le langage du projet.
-* **Gestionnaire de dépendances :** `npm` / `yarn` / `pnpm` ou `pip` / `poetry`.
-* **Conteneurisation (optionnel) :** Docker (`>= 20.10`) et Docker Compose.
+Le DAG `forum_etl` planifie l'exécution séquentielle des étapes suivantes :
+
+1. **`scrape_topics` :** Lancement du spider Scrapy `topics` pour exporter les données brutes dans `topics.jl`.
+2. **`scrape_posts` :** Exécution du spider `posts` à la suite de la récupération des sujets.
+3. **`transload_posts` :** Nettoyage, transformation et chargement des messages via `tl_posts.py`.
+4. **`transload_topics` :** Transformation et persistance finale des sujets via `tl_topics.py`.
 
 ---
 
-## Installation
+## Installation et Déploiement
 
-1. **Cloner le dépôt :**
+### Option 1 : Déploiement Conteneurisé (Docker)
+
+1. Construire l'image Docker :
+```bash
+docker build -t project-boucle .
+
+```
+
+
+2. Exécuter le conteneur :
+```bash
+docker run -d --name project-boucle-container project-boucle
+
+```
+
+
+
+### Option 2 : Exécution Locale / Autonome
+
+1. Cloner le dépôt :
 ```bash
 git clone https://github.com/BTBMortier/project-boucle.git
 cd project-boucle
@@ -52,42 +99,23 @@ cd project-boucle
 ```
 
 
-2. **Installer les dépendances :**
-* *Environnement Node.js :*
-```bash
-npm install
-
-```
-
-
-* *Environnement Python :*
+2. Installer les dépendances Python :
 ```bash
 pip install -r requirements.txt
 
 ```
 
 
-
-
-
----
-
-## Configuration
-
-1. Dupliquer le fichier modèle d'environnement :
+3. Exécuter manuellement les composants du pipeline :
 ```bash
-cp .env.example .env
+# 1. Extraction
+cd pipeline/boucled_scrapers/spiders
+scrapy crawl topics -O topics.jl
+scrapy crawl posts
 
-```
-
-
-2. Renseigner les paramètres applicatifs dans le fichier `.env` :
-```env
-NODE_ENV=development
-PORT=3000
-LOG_LEVEL=info
-MAX_RETRIES=3
-TIMEOUT_MS=5000
+# 2. Transformation et chargement
+python3 ../../boucled_etl/tl_posts.py
+python3 ../../boucled_etl/tl_topics.py
 
 ```
 
@@ -95,70 +123,11 @@ TIMEOUT_MS=5000
 
 ---
 
-## Utilisation
+## Conversion des Notebooks
 
-### Mode Développement
-
-```bash
-npm run dev
-# ou
-python src/main.py
-
-```
-
-### Mode Production
+Les fichiers de prototypage `.ipynb` situés dans `pipeline/boucled_etl/` peuvent être convertis en scripts Python exécutables via le script utilitaire fourni :
 
 ```bash
-npm start
+bash pipeline/boucled_etl/convert_nbs.sh
 
 ```
-
-### Exécution via Docker
-
-```bash
-docker build -t project-boucle .
-docker run -p 3000:3000 --env-file .env project-boucle
-
-```
-
----
-
-## Tests
-
-Exécuter la suite de tests automatisés pour valider le comportement du code :
-
-```bash
-# Lancement de l'ensemble des tests
-npm test
-
-# Rapport de couverture du code
-npm run test:coverage
-
-```
-
----
-
-## Processus de Contribution
-
-1. Créer une branche dédiée :
-```bash
-git checkout -b feature/nom-fonctionnalite
-
-```
-
-
-2. Valider le respect du linter et la réussite des tests unitaires.
-3. Formater les commits selon la convention *Conventional Commits* :
-```bash
-git commit -m "feat: ajout du module d'itération parallèle"
-
-```
-
-
-4. Pousser la branche et soumettre une Pull Request vers la branche principale `main`.
-
----
-
-## Licence
-
-Ce projet est distribué sous licence MIT. Se référer au fichier `LICENSE` pour plus de précisions.
