@@ -2,7 +2,7 @@
 
 ## Présentation
 
-**Project Boucle** est un pipeline ETL (Extract, Transform, Load) automatisé conçu pour l'extraction de données issues de forums web, leur transformation et leur persistance dans des bases de données relationnelles et NoSQL.
+**Project Boucle** est une pipeline ETL (Extract, Transform, Load) automatisé conçu pour l'extraction de données issues de forums web, leur transformation et leur persistance dans des bases de données relationnelles et NoSQL.
 
 Le projet est conteneurisé via Docker et orchestrait par Apache Airflow, tout en conservant la possibilité d'être exécuté de manière autonome.
 
