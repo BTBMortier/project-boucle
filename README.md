@@ -13,8 +13,8 @@ Le projet est conteneurisé via Docker et orchestrait par Apache Airflow, tout e
 * **Extraction (Scraping) :** Scrapy (Spiders pour sujets `topics` et messages `posts`).
 * **Transformation & Chargement (ETL) :** Python / Spark (`tl_posts.py`, `tl_topics.py`).
 * **Stockage & Persistance :**
-* **PostgreSQL :** Connecteur et requêtes via `postgres.py`.
-* **MongoDB :** Connecteur et requêtes via `mongodb.py`.
+*     **PostgreSQL :** Connecteur et requêtes via `postgres.py`.
+*     **MongoDB :** Connecteur et requêtes via `mongodb.py`.
 
 
 * **Orchestration :** Apache Airflow (`forum_etl.py`).
