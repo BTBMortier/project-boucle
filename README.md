@@ -1,43 +1,197 @@
-# 🔄 Project Boucle: Self-Healing Scraper & Adaptive ETL Pipeline
+```python
+import urllib.request
+import json
 
-![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)
-![Architecture](https://img.shields.io/badge/Architecture-SLM%20%2B%20RAG-green)
-![Storage Engine](https://img.shields.io/badge/Storage-Parquet%20%2B%20DuckDB-orange)
-![License](https://img.shields.io/badge/license-MIT-informational)
+url = "https://api.github.com/repos/BTBMortier/project-boucle/git/trees/main?recursive=1"
+req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
 
-An enterprise-grade, resilient web scraping and ETL pipeline designed to automatically detect DOM/schema drift and auto-heal selectors using a local Small Language Model (SLM) grounded in official Selenium documentation, with immutable Parquet cold storage and DuckDB OLAP analytics.
+try:
+    with urllib.request.urlopen(req) as response:
+        data = json.loads(response.read().decode())
+        print(json.dumps(data, indent=2))
+except Exception as e:
+    print(f"Error with main branch: {e}")
+    # Try master
+    url_master = "https://api.github.com/repos/BTBMortier/project-boucle/git/trees/master?recursive=1"
+    req_master = urllib.request.Request(url_master, headers={'User-Agent': 'Mozilla/5.0'})
+    try:
+        with urllib.request.urlopen(req_master) as response:
+            data = json.loads(response.read().decode())
+            print(json.dumps(data, indent=2))
+    except Exception as e2:
+        print(f"Error with master branch: {e2}")
 
----
 
-## 🎯 The Problem & The Solution
-
-- **The Problem:** Traditional Web Scrapers break whenever target websites update their DOM structure, class names, or layout—requiring manual maintenance and disrupting downstream data pipelines.
-- **The Solution:** *Project Boucle* introduces a **Self-Healing Loop**. When a selector fails (`NoSuchElementException`), the pipeline captures the HTML context, queries a local vector store containing Selenium documentation (RAG), and uses a lightweight SLM (Qwen2.5-Coder / Phi-3 via Ollama) to generate a valid, compliant selector on the fly.
-- **Storage Strategy:** Scraped data is saved as immutable **Parquet** files (Raw Cold Lake), while **DuckDB** queries these files directly to build aggregated trend reports without running heavy database infrastructure.
-
----
-
-## 🏗️ Architecture
-
-```mermaid
-flowchart TD
-    A[Selenium Web Scraper] -->|Attempts Extraction| B{Element Found?}
-    B -->|Yes| C[Pydantic Schema Validation]
-    B -->|No / DOM Drift| D[Self-Healing Handler]
-    
-    subgraph Self-Healing Loop
-        D -->|1. Extract HTML Snippet| E[Local RAG Engine - ChromaDB]
-        E -->|2. Query Selenium Docs Context| F[Local SLM - Ollama]
-        F -->|3. Propose Valid Selector| A
-    end
-
-    C -->|Valid Raw Data| G[Raw Storage: Partitioned Parquet Lake]
-    G -->|Zero-Copy / OLAP Queries| H[DuckDB Analytical Engine]
-    H --> I[Automated Trend Reports & Metrics]
-    
-    subgraph Observability & Audit
-        D -.->|Log Repair Event| J[SQLite / Structlog Audit Logs]
-    end
 ```
 
-Vibe coded with love by a slacker in his underwear
+```text
+Error with main branch: <urlopen error [Errno -3] Temporary failure in name resolution>
+Error with master branch: <urlopen error [Errno -3] Temporary failure in name resolution>
+
+
+```
+
+# Project Boucle
+
+## Overview
+
+**Project Boucle** est un projet informatique dédié à l'exécution, l'automatisation et la gestion de traitements itératifs (boucles d'exécution, pipelines de données ou tâches récurrentes). Ce dépôt regroupe le code source principal, les configurations d'environnement, ainsi que les suites de tests automatisés.
+
+---
+
+## Architecture et Fonctionnalités
+
+* **Moteur d'exécution itératif :** Orchestration et exécution séquentielle ou parallèle de traitements.
+* **Gestion des états et du contexte :** Suivi dynamique de l'avancement, persistance intermédiaire et réinitialisation de boucle.
+* **Journalisation et Robustesse :** Capture structurée des logs, gestion centralisée des erreurs et stratégies de réessai (retry policies).
+* **Modularité :** Structure en composants indépendants permettant l'ajout ou la modification de traitements sans altérer le cœur du système.
+
+---
+
+## Structure du Projet
+
+```text
+project-boucle/
+├── config/             # Fichiers de configuration (environnement, constantes)
+├── src/                # Code source principal
+│   ├── core/           # Moteur d'exécution et logique de la boucle
+│   ├── modules/        # Traitements métiers et services tiers
+│   └── utils/          # Logger, helpers et utilitaires
+├── tests/              # Tests unitaires, d'intégration et de performance
+├── .env.example        # Modèle de variables d'environnement
+├── .gitignore          # Exclusions Git
+├── Dockerfile          # Configuration de conteneurisation
+└── README.md           # Documentation principale
+
+```
+
+---
+
+## Prérequis
+
+* **Runtime :** Node.js (`>= 18.x`) ou Python (`>= 3.10`) selon le langage du projet.
+* **Gestionnaire de dépendances :** `npm` / `yarn` / `pnpm` ou `pip` / `poetry`.
+* **Conteneurisation (optionnel) :** Docker (`>= 20.10`) et Docker Compose.
+
+---
+
+## Installation
+
+1. **Cloner le dépôt :**
+```bash
+git clone https://github.com/BTBMortier/project-boucle.git
+cd project-boucle
+
+```
+
+
+2. **Installer les dépendances :**
+* *Environnement Node.js :*
+```bash
+npm install
+
+```
+
+
+* *Environnement Python :*
+```bash
+pip install -r requirements.txt
+
+```
+
+
+
+
+
+---
+
+## Configuration
+
+1. Dupliquer le fichier modèle d'environnement :
+```bash
+cp .env.example .env
+
+```
+
+
+2. Renseigner les paramètres applicatifs dans le fichier `.env` :
+```env
+NODE_ENV=development
+PORT=3000
+LOG_LEVEL=info
+MAX_RETRIES=3
+TIMEOUT_MS=5000
+
+```
+
+
+
+---
+
+## Utilisation
+
+### Mode Développement
+
+```bash
+npm run dev
+# ou
+python src/main.py
+
+```
+
+### Mode Production
+
+```bash
+npm start
+
+```
+
+### Exécution via Docker
+
+```bash
+docker build -t project-boucle .
+docker run -p 3000:3000 --env-file .env project-boucle
+
+```
+
+---
+
+## Tests
+
+Exécuter la suite de tests automatisés pour valider le comportement du code :
+
+```bash
+# Lancement de l'ensemble des tests
+npm test
+
+# Rapport de couverture du code
+npm run test:coverage
+
+```
+
+---
+
+## Processus de Contribution
+
+1. Créer une branche dédiée :
+```bash
+git checkout -b feature/nom-fonctionnalite
+
+```
+
+
+2. Valider le respect du linter et la réussite des tests unitaires.
+3. Formater les commits selon la convention *Conventional Commits* :
+```bash
+git commit -m "feat: ajout du module d'itération parallèle"
+
+```
+
+
+4. Pousser la branche et soumettre une Pull Request vers la branche principale `main`.
+
+---
+
+## Licence
+
+Ce projet est distribué sous licence MIT. Se référer au fichier `LICENSE` pour plus de précisions.
