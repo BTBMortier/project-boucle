@@ -20,46 +20,22 @@ L'ensemble de l'architecture est conteneurisé et orchestré via **Apache Airflo
 Le pipeline suit un modèle séquentiel strict piloté par DAG, garantissant l'intégrité des données à chaque étape de transformation :
 
 ```mermaid
-graph TD
-    %% Source
-    WEB[🌐 Forums Web / Sources Unstructured]
+graph LR
+    WEB[🌐 Forums Web] -->|Scrapy| INGEST[1. Scrapy Spiders<br/><i>topics & posts</i>]
+    INGEST -->|Dump| RAW[(📄 Raw JL Buffer)]
+    RAW -->|PySpark| SPARK[2. Data Transformation<br/><i>tl_topics & tl_posts</i>]
+    
+    SPARK -->|Persist SQL| PG[(🐘 PostgreSQL<br/>Data Structurée)]
+    SPARK -->|Archive NoSQL| MONGO[(🍃 MongoDB<br/>Archivage Document)]
 
-    %% Ingestion
-    subgraph Ingestion ["1. Ingestion (Scrapy)"]
-        SP_T[Spider: topics]
-        SP_P[Spider: posts]
+    subgraph AIRFLOW [⚙️ Orchestration : Apache Airflow DAG]
+        INGEST
+        RAW
+        SPARK
     end
 
-    %% Storage Temp
-    RAW[📄 Raw JL Buffer]
-
-    %% Processing
-    subgraph Processing ["2. Transformation (PySpark)"]
-        TL_T[tl_topics.py / Cleaning & Normalization]
-        TL_P[tl_posts.py / Content Parsing & Structuring]
-    end
-
-    %% Persistence
-    subgraph Persistence ["3. Persistance Hybride"]
-        PG[(🐘 PostgreSQL / Data Structurée)]
-        MG[(🍃 MongoDB / Archiving Document)]
-    end
-
-    %% Flow Relations
-    WEB -->|Scrape| SP_T & SP_P
-    SP_T & SP_P -->|Dump Brut| RAW
-    RAW -->|Stream/Batch Ingest| TL_T & TL_P
-    TL_T & TL_P -->|Persist SQL| PG
-    TL_T & TL_P -->|Archive NoSQL| MG
-
-    %% Orchestration Overlay
-    subgraph Control [" Orchestration (Apache Airflow) "]
-        DAG[DAG: forum_etl]
-    end
-
-    DAG -.->|Trigger & Monitor| Ingestion
-    DAG -.->|Trigger & Monitor| Processing
-
+    classDef storage fill:#2b2b2b,stroke:#888,stroke-width:1px;
+    class PG,MONGO,RAW storage;
 ```
 
 ---
@@ -72,18 +48,6 @@ graph TD
 * **Orchestration :** Apache Airflow (DAGs orientés événements/planning)
 * **Environnement :** Docker, Bash
 
-```
-
----
-
-### 💡 Pourquoi cette intro tape plus fort :
-1. **Terminologie Pro :** Utilisation de termes comme *flux textuels non structurés*, *modèle séquentiel strict*, *persistance hybride*, *ingestion massive*.
-2. **Badges d'en-tête :** Les petits shields en haut donnent tout de suite un aspect projet Open-Source maintenu.
-3. **Schéma Mermaid épuré :** Il sépare visuellement l'Ingestion, le Traitement (PySpark), la Persistance et le Contrôle (Airflow) pour qu'un recruteur ou un Lead Tech comprenne l'architecture complète en **3 secondes d'œil**.
-
-```
-
----
 
 ## Arborescence du Projet
 
