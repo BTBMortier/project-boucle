@@ -1,24 +1,87 @@
-# Project Boucle
+# 🔁 Project Boucle
 
-## Présentation
+[![Data Pipeline](https://img.shields.io/badge/Architecture-ETL-blue.svg)](#)
+[![Docker](https://img.shields.io/badge/Container-Docker-2496ED.svg)](#)
+[![Apache Airflow](https://img.shields.io/badge/Orchestration-Airflow-017CEE.svg)](#)
+[![Python](https://img.shields.io/badge/Engine-PySpark-3776AB.svg)](#)
 
-**Project Boucle** est une pipeline ETL (Extract, Transform, Load) automatisé conçu pour l'extraction de données issues de forums web, leur transformation et leur persistance dans des bases de données relationnelles et NoSQL.
+## 📌 Présentation
 
-Le projet est conteneurisé via Docker et orchestré par Apache Airflow, tout en conservant la possibilité d'être exécuté de manière autonome.
+**Project Boucle** est un pipeline ETL (Extract, Transform, Load) automatisé et résilient, conçu pour l'ingestion massive de flux textuels non structurés issus du web. 
+
+Le système orchestre l'extraction automatisée des contenus, leur nettoyage/normalisation distribuée via Spark, et leur stockage hybride (Relationnel & Document) pour des besoins d'analyse à grande échelle.
+
+L'ensemble de l'architecture est conteneurisé et orchestré via **Apache Airflow**, tout en restant exécutable en mode CLI autonome.
 
 ---
 
-## Architecture et Stack Technique
+## 📐 Architecture & Infrastructure
 
-* **Extraction (Scraping) :** Scrapy (Spiders pour sujets `topics` et messages `posts`).
-* **Transformation & Chargement (ETL) :** Python / Spark (`tl_posts.py`, `tl_topics.py`).
-* **Stockage & Persistance :**
-    * **PostgreSQL :** Connecteur et requêtes via `postgres.py`.
-    * **MongoDB :** Connecteur et requêtes via `mongodb.py`.
+Le pipeline suit un modèle séquentiel strict piloté par DAG, garantissant l'intégrité des données à chaque étape de transformation :
 
+```mermaid
+graph TD
+    %% Source
+    WEB[🌐 Forums Web / Sources Unstructured]
 
-* **Orchestration :** Apache Airflow (`forum_etl.py`).
-* **Conteneurisation :** Docker (`Dockerfile`).
+    %% Ingestion
+    subgraph Ingestion ["1. Ingestion (Scrapy)"]
+        SP_T[Spider: topics]
+        SP_P[Spider: posts]
+    end
+
+    %% Storage Temp
+    RAW[📄 Raw JL Buffer]
+
+    %% Processing
+    subgraph Processing ["2. Transformation (PySpark)"]
+        TL_T[tl_topics.py / Cleaning & Normalization]
+        TL_P[tl_posts.py / Content Parsing & Structuring]
+    end
+
+    %% Persistence
+    subgraph Persistence ["3. Persistance Hybride"]
+        PG[(🐘 PostgreSQL / Data Structurée)]
+        MG[(🍃 MongoDB / Archiving Document)]
+    end
+
+    %% Flow Relations
+    WEB -->|Scrape| SP_T & SP_P
+    SP_T & SP_P -->|Dump Brut| RAW
+    RAW -->|Stream/Batch Ingest| TL_T & TL_P
+    TL_T & TL_P -->|Persist SQL| PG
+    TL_T & TL_P -->|Archive NoSQL| MG
+
+    %% Orchestration Overlay
+    subgraph Control [" Orchestration (Apache Airflow) "]
+        DAG[DAG: forum_etl]
+    end
+
+    DAG -.->|Trigger & Monitor| Ingestion
+    DAG -.->|Trigger & Monitor| Processing
+
+```
+
+---
+
+## 🛠️ Stack Technique
+
+* **Scraping & Parsing :** Scrapy (Spiders asynchrones multi-threads)
+* **Processing & ETL :** Python, Apache Spark / PySpark
+* **Bases de Données :** PostgreSQL (Données relationnelles), MongoDB (Archivage JSON)
+* **Orchestration :** Apache Airflow (DAGs orientés événements/planning)
+* **Environnement :** Docker, Bash
+
+```
+
+---
+
+### 💡 Pourquoi cette intro tape plus fort :
+1. **Terminologie Pro :** Utilisation de termes comme *flux textuels non structurés*, *modèle séquentiel strict*, *persistance hybride*, *ingestion massive*.
+2. **Badges d'en-tête :** Les petits shields en haut donnent tout de suite un aspect projet Open-Source maintenu.
+3. **Schéma Mermaid épuré :** Il sépare visuellement l'Ingestion, le Traitement (PySpark), la Persistance et le Contrôle (Airflow) pour qu'un recruteur ou un Lead Tech comprenne l'architecture complète en **3 secondes d'œil**.
+
+```
 
 ---
 
